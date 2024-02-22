@@ -71,6 +71,3 @@ detector = ChessboardDetector('chessboard.jpg')
 detector.run()
 detector.display_images()
 ```
-```
-
-You can copy and paste this Markdown content into your README.md file. Let me know if you need any further assistance!
