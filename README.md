@@ -1,7 +1,4 @@
-Certainly! Here's the README content formatted in Markdown:
-
-```markdown
-# Chessboard Detector
+## Chessboard Detector
 
 The Chessboard Detector is a Python class designed to detect chessboard patterns and identify pieces on a chessboard image. It provides functionalities to preprocess the image, detect lines using Hough Line Transform, extract contours, crop sections of the chessboard, determine colors representing black and white squares, and identify pieces based on intensity thresholds.
 
