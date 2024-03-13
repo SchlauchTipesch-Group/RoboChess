@@ -5,6 +5,19 @@ class MoveMaker:
     """
     This class is responsible for managing the chess game, including making moves for both the player
     and the bot (powered by the Stockfish chess engine), and checking the game status.
+
+    Attributes:
+        _stockfish (chess.engine.SimpleEngine): An instance of the Stockfish chess engine.
+        _board (chess.Board): A chess board object representing the current game state.
+        _stockfishDepth (int): The depth level for the Stockfish engine's analysis.
+
+    Methods:
+        __init__(self, difficulty): Initializes the MoveMaker object with the specified difficulty level.
+        get_board(self): Returns the current state of the chess board.
+        getOutcome(self): Return the outcome of the game None if ongoing.
+        makePlayerMove(self, move_uci): Makes a move for the player on the chess board.
+        makeBotMove(self): Makes a move for the bot using the Stockfish engine.
+        endGame(self): Ends the game and quits the Stockfish engine.
     """
 
     def __init__(self, difficulty):
@@ -21,29 +34,26 @@ class MoveMaker:
         # Initialize a new chess board
         self._board = chess.Board()
 
-        # Set the initial status to 0
-        self._status = 0
-
         # Specify the depth level for Stockfish's analysis
         self._stockfishDepth = difficulty
 
-    def get_status(self):
+    def get_board(self):
         """
-        Returns the current status of the game.
+        Returns the current state of the chess board.
 
         Returns:
-            int: The status of the game (0: ongoing, -1: illegal move, 1: legal move).
+            chess.Board: The board.
         """
-        return self._status
+        return self._board
 
-    def isOver(self):
+    def getOutcome(self):
         """
         Checks if the game is over.
 
         Returns:
             bool: True if the game is over, False otherwise.
         """
-        return self._board.is_game_over()
+        return self._board.outcome()
 
     def makePlayerMove(self, move_uci):
         """
@@ -52,16 +62,21 @@ class MoveMaker:
         Args:
             move_uci (str): The move in UCI notation (e.g., "e2e4").
 
-        Updates the game status based on the legality of the move:
-            - If the move is illegal, the status is set to -1.
-            - If the move is legal, the status is set to 1, and the move is made on the board.
+        Returns:
+            int: A status code indicating the legality of the move:
+                 - -1 if the move is illegal
+                 - 1 if the move is legal
+
+        If the move is legal, the move is made on the board.
         """
         move = chess.Move.from_uci(move_uci)
         if move not in self._board.legal_moves:
-            self._status = -1
+            status = -1
         else:
-            self._status = 1
+            status = 1
             self._board.push(move)
+
+        return status
 
     def makeBotMove(self):
         """
@@ -69,10 +84,16 @@ class MoveMaker:
 
         The bot's move is determined by the Stockfish engine, considering the current board
         position and the specified depth of analysis.
+
+        Returns:
+            chess.Move: The move made by the Stockfish engine.
         """
         result = self._stockfish.play(self._board, chess.engine.Limit(depth=self._stockfishDepth))
         stockfish_move = result.move
+
         self._board.push(stockfish_move)
+
+        return stockfish_move
 
     def endGame(self):
         """
