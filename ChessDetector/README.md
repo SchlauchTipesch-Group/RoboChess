@@ -71,3 +71,69 @@ detector = ChessboardDetector('chessboard.jpg')
 detector.run()
 detector.display_images()
 ```
+
+# Chess MoveFinder
+
+Chess MoveFinder is a Python class responsible for finding the move made on a chessboard based on the difference between the current and next board states.
+
+## Usage
+
+To use the MoveFinder class, follow these steps:
+
+1. Import the class into your Python script:
+
+```from move_finder import MoveFinder```
+
+2. Create an instance of the MoveFinder class, passing the current state of the chessboard:
+
+```current_board = chess.Board()
+move_finder = MoveFinder(current_board)```
+
+3. Find the move made on the chessboard based on the difference between the current and next board states:
+
+# Assuming next_board is the next state of the chessboard
+```next_board = ...  # numpy.ndarray representing the next state of the chessboard
+move = move_finder.find_move(next_board)
+print("Move made:", move)```
+
+4. Update the current chessboard with the new state:
+
+# Assuming new_board is the new state of the chessboard
+```new_board = ...  # chess.Board representing the new state of the chessboard
+move_finder.push_board(new_board)```
+
+## Methods
+
+- __init__(self, board): Initializes the MoveFinder object with the given chessboard.
+- set_status(self, new_status): Sets the status of the class.
+- find_move(self, next_board): Finds the move made on the chessboard based on the difference between the current and next board states.
+- push_board(self, board): Updates the current chessboard with the given board.
+
+## Example
+
+Here's an example of how to use the MoveFinder class:
+```
+from move_finder import MoveFinder
+
+# Create an instance of the MoveFinder class
+current_board = chess.Board()
+move_finder = MoveFinder(current_board)
+
+# Assuming next_board is the next state of the chessboard
+next_board = ...  # numpy.ndarray representing the next state of the chessboard
+move = move_finder.find_move(next_board)
+print("Move made:", move)
+
+# Assuming new_board is the new state of the chessboard
+new_board = ...  # chess.Board representing the new state of the chessboard
+move_finder.push_board(new_board)
+```
+
+## Notes
+
+- The find_move method returns a list containing the UCI notation of the move made if it can be determined. Otherwise, it returns the string 'p1z1'.
+- The class utilizes the chess library for handling chess-related operations.
+
+## License
+
+Chess MoveFinder is licensed under the MIT License. See the LICENSE file for more information.
