@@ -1,19 +1,18 @@
 #include "SteppersControl.h"
 
-SteppersControl sp = SteppersControl(STEP_X_PIN, DIR_X_PIN, STEP_Y_PIN, DIR_Y_PIN);
+// 7V | 10V
+SteppersControl controller;
+int i = 0;
 
 void setup()
 {
-  Serial.begin(115200);  
+  // Constructor
+  Stepper* xStepper = new Stepper(200, 6, 8, 7, 9);
+  Stepper* yStepper = new Stepper(200, 2, 4, 3, 5);
+  controller = SteppersControl(xStepper, yStepper);
 }
 
 void loop()
 {
-  for (int i = 0; i < 64; i++)
-  {
-    sp.goToSquare(i);
-    delay(1000);
-  }
-
-  delay(5000);
+  controller.manualControl();
 }
