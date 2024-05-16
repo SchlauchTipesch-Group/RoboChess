@@ -1,85 +1,147 @@
 #include "Arduino.h"
 #include "SteppersControl.h"
+#include "Stepper.h"
 
-SteppersControl::SteppersControl(const STEP_PINS xAxisStepPin, const DIR_PINS xAxisDirPin, const STEP_PINS yAxisStepPin, const DIR_PINS yAxisDirPin)
+SteppersControl::SteppersControl(Stepper* xStepper, Stepper* yStepper)
 {
-    _xAxisStepPin = xAxisStepPin;
-    _xAxisDirPin = xAxisDirPin;
-    _yAxisStepPin = yAxisStepPin;
-    _yAxisDirPin = yAxisDirPin;
+  _xStepper = xStepper;
+  _yStepper = yStepper;
+  pinMode(10, INPUT_PULLUP);
+  pinMode(11, INPUT_PULLUP);
+  pinMode(A0, INPUT);
+  pinMode(A1, INPUT);
+  pinMode(A2, INPUT_PULLUP);
 
-    // TODO: Add calibration function
-    _xAxisLocation = 0;
-    _yAxisLocation = 0;
-    _currentSquare = 0;
-
-    // Turn on the enable pin
-    pinMode(EN_PIN, OUTPUT);
-    digitalWrite(EN_PIN, HIGH);
-
-    pinMode(_xAxisStepPin, OUTPUT);
-    pinMode(_xAxisDirPin, OUTPUT);
-    pinMode(_yAxisStepPin, OUTPUT);
-    pinMode(_yAxisDirPin, OUTPUT);
+  Serial.begin(115200);
+  
+  (*_xStepper).setSpeed(75);
+  (*_yStepper).setSpeed(150);
+}
+SteppersControl::SteppersControl()
+{
 }
 
-void SteppersControl::goToSquare(const int targetSquare)
+SteppersControl::~SteppersControl()
 {
-    if (targetSquare < 0 || targetSquare > 63)
-    {
-        return;
-    }
-    int targetRow = targetSquare % 8;
-    int targetCol = targetSquare / 8;
-
-    move(targetRow > _currentSquare % 8,
-        targetRow * SQUARE_SIZE,
-        targetCol > _currentSquare / 8,
-        targetCol * SQUARE_SIZE
-    );
-
-    _currentSquare = targetSquare;
+  delete _xStepper;
+  delete _yStepper;
 }
 
-void SteppersControl::move(const bool xAxisDirection, const int xAxisDistance, const bool yAxisDirection, const int yAxisDistance)
+
+
+void SteppersControl::calibrateX()
 {
-    // Declaring the direction for each axis
-    digitalWrite(_xAxisDirPin, xAxisDirection);
-    digitalWrite(_yAxisDirPin, yAxisDirection);
+  while (digitalRead(10))
+  {
+    (*_xStepper).step(1);
+  }  
+}
+void SteppersControl::calibrateY()
+{
+  // Calibrate Y axis
+  while (digitalRead(11))
+  {
+    (*_yStepper).step(1);
+  }
+}
+void SteppersControl::calibrateAxes()
+{
+  this->calibrateX();
+  this->calibrateY();
+}
 
-    // Run until both axes move their target distance
-    for (int i = 0; (i < X_STEPS_PER_MM * xDistance) || (i < Y_STEPS_PER_MM * yDistance); i++)
+void SteppersControl::manualControl()
+{
+  int xDirection = analogRead(A0);
+  int yDirection = analogRead(A1);
+
+  if (xDirection > 550)
+  {
+    _xStepper->step(1);
+    _xAxisLocation++;
+  }
+  else if (xDirection < 450)
+  {
+    _xStepper->step(-1);
+    _xAxisLocation--;
+  }
+  if (yDirection > 550)
+  {
+    _yStepper->step(1);
+    _yAxisLocation++;
+  }
+  else if (yDirection < 450)
+  {
+    _yStepper->step(-1);
+    _yAxisLocation--;
+  }
+  if (!digitalRead(A2))
+  {
+    calibrateAxes();
+  }
+}
+
+void SteppersControl::goToSquare(int targetSquare)
+{
+  targetSquare = targetSquare % 64;
+  int targetCol =  targetSquare / 8;
+  int targetRow =  targetSquare % 8;
+  int stepCol = 50;
+  int stepRow = 50;
+  int currCol = (this->_currentSquare / 8);
+  int currRow = (this->_currentSquare / 8);
+
+  targetCol = targetCol - currCol;
+  targetRow = targetRow - currRow;
+
+  if(targetCol < 0)
+  {
+    targetCol = targetCol * (-1);
+    stepCol = -50;
+  }
+  if(targetRow < 0)
+  {
+    targetRow= targetRow * (-1);
+    stepRow = -50;
+  }
+
+  currCol = 0;
+  currRow = 0;
+  for (int i = 0; i < 8; i++)
+  {
+    if (currCol < targetCol)
     {
-        // If the X axis has more to go, set step pin to HIGH
-        if (i < X_STEPS_PER_MM * xDistance)
-        {
-            digitalWrite(_xAxisStepPin, HIGH);
-        }
-        // Else, set step pin to LOW so that it wouldn't interfere with the other axis
-        else
-        {
-            digitalWrite(_xAxisStepPin, LOW);
-        }
-
-        // If the Y axis has more to go, set step pin to HIGH
-        if (i < Y_STEPS_PER_MM * yDistance)
-        {
-            digitalWrite(_yAxisStepPin, HIGH);
-        }
-        // Else, set step pin to LOW so that it wouldn't interfere with the other axis
-        else
-        {
-            digitalWrite(_yAxisStepPin, LOW);
-        }
-
-        // Delay and set both step pins to LOW
-        delay(5);
-        digitalWrite(_xAxisStepPin, LOW);
-        digitalWrite(_yAxisStepPin, LOW);
-        delay(5);
+      (*_yStepper).step(stepCol);
+      currCol++;
+      delay(50);
     }
+    
+    if (currRow < targetRow)
+    {
+      (*_xStepper).step(stepRow);
+      currRow++;
+      delay(100);
+    }
+  }
+}
 
-    // Update the current location of each axis
-    _xAxisLocation += xAxisDistance;
-    _yAxisLocation += yAxisDistance;
+// Copy assignment operator
+SteppersControl& SteppersControl::operator=(const SteppersControl& other)
+{
+    if (this!= &other)
+    {
+        delete _xStepper;
+        delete _yStepper;
+
+        // Assign new Stepper objects
+        _xStepper = (other._xStepper);
+        _yStepper = (other._yStepper);
+
+        // Copy other member variables
+        //stepsPerRev = other.stepsPerRev;
+        _xAxisLocation = other._xAxisLocation;
+        _yAxisLocation = other._yAxisLocation;
+        _currentSquare = other._currentSquare;
+    }
+    return *this;
 }
