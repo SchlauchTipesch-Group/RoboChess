@@ -1,39 +1,25 @@
-#include "Arduino.h"
 #include "SteppersControl.h"
 #include "Stepper.h"
 
-SteppersControl::SteppersControl(Stepper* xStepper, Stepper* yStepper)
+SteppersControl::SteppersControl() : _xStepper(200, 6, 8, 7, 9), _yStepper(200, 2, 4, 3, 5)
 {
-  _xStepper = xStepper;
-  _yStepper = yStepper;
+  _xStepper.setSpeed(100);
+  _yStepper.setSpeed(150);
+
   pinMode(10, INPUT_PULLUP);
   pinMode(11, INPUT_PULLUP);
   pinMode(A0, INPUT);
   pinMode(A1, INPUT);
   pinMode(A2, INPUT_PULLUP);
 
-  Serial.begin(115200);
-  
-  (*_xStepper).setSpeed(75);
-  (*_yStepper).setSpeed(150);
+  //calibrateAxes();
 }
-SteppersControl::SteppersControl()
-{
-}
-
-SteppersControl::~SteppersControl()
-{
-  delete _xStepper;
-  delete _yStepper;
-}
-
-
 
 void SteppersControl::calibrateX()
 {
   while (digitalRead(10))
   {
-    (*_xStepper).step(1);
+    _xStepper.step(-1);
   }  
 }
 void SteppersControl::calibrateY()
@@ -41,7 +27,7 @@ void SteppersControl::calibrateY()
   // Calibrate Y axis
   while (digitalRead(11))
   {
-    (*_yStepper).step(1);
+    _yStepper.step(1);
   }
 }
 void SteppersControl::calibrateAxes()
@@ -57,22 +43,22 @@ void SteppersControl::manualControl()
 
   if (xDirection > 550)
   {
-    _xStepper->step(1);
+    _xStepper.step(1);
     _xAxisLocation++;
   }
   else if (xDirection < 450)
   {
-    _xStepper->step(-1);
+    _xStepper.step(-1);
     _xAxisLocation--;
   }
   if (yDirection > 550)
   {
-    _yStepper->step(1);
+    _yStepper.step(1);
     _yAxisLocation++;
   }
   else if (yDirection < 450)
   {
-    _yStepper->step(-1);
+    _yStepper.step(-1);
     _yAxisLocation--;
   }
   if (!digitalRead(A2))
@@ -81,67 +67,23 @@ void SteppersControl::manualControl()
   }
 }
 
-void SteppersControl::goToSquare(int targetSquare)
+void SteppersControl::move(const char xDistance, const char yDistance)
 {
-  targetSquare = targetSquare % 64;
-  int targetCol =  targetSquare / 8;
-  int targetRow =  targetSquare % 8;
-  int stepCol = 50;
-  int stepRow = 50;
-  int currCol = (this->_currentSquare / 8);
-  int currRow = (this->_currentSquare / 8);
+  // Move axes
+  int x = xDistance * 34 * 2;
+  int y = -yDistance * 34 * 6;
 
-  targetCol = targetCol - currCol;
-  targetRow = targetRow - currRow;
+  Serial.print("X: ");
+  Serial.println(x, DEC);
 
-  if(targetCol < 0)
-  {
-    targetCol = targetCol * (-1);
-    stepCol = -50;
-  }
-  if(targetRow < 0)
-  {
-    targetRow= targetRow * (-1);
-    stepRow = -50;
-  }
+  Serial.print("Y: ");
+  Serial.println(y, DEC);
 
-  currCol = 0;
-  currRow = 0;
-  for (int i = 0; i < 8; i++)
-  {
-    if (currCol < targetCol)
-    {
-      (*_yStepper).step(stepCol);
-      currCol++;
-      delay(50);
-    }
-    
-    if (currRow < targetRow)
-    {
-      (*_xStepper).step(stepRow);
-      currRow++;
-      delay(100);
-    }
-  }
-}
+  _xStepper.step(x);
+  Serial.println("Done");
+  _yStepper.step(y);
 
-// Copy assignment operator
-SteppersControl& SteppersControl::operator=(const SteppersControl& other)
-{
-    if (this!= &other)
-    {
-        delete _xStepper;
-        delete _yStepper;
-
-        // Assign new Stepper objects
-        _xStepper = (other._xStepper);
-        _yStepper = (other._yStepper);
-
-        // Copy other member variables
-        //stepsPerRev = other.stepsPerRev;
-        _xAxisLocation = other._xAxisLocation;
-        _yAxisLocation = other._yAxisLocation;
-        _currentSquare = other._currentSquare;
-    }
-    return *this;
+  // Update the current location of each axis
+  _xAxisLocation += x;
+  _yAxisLocation += y;
 }

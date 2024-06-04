@@ -8,21 +8,17 @@
 class SteppersControl
 {
 public:
-    SteppersControl(Stepper* xStepper, Stepper* yStepper);
     SteppersControl();
-    ~SteppersControl();
-    void goToSquare(int targetSquare);
+    void move(const char xDistance, const char yDistance);
+    void manualControl();
+private:
     void calibrateAxes();
     void calibrateX();
     void calibrateY();
-    void manualControl();
-
-    SteppersControl& operator=(const SteppersControl& other);
 
 private:
-    Stepper* _xStepper;
-    Stepper* _yStepper;
-    const int stepsPerRev = 200;
+    Stepper _xStepper;
+    Stepper _yStepper;
     int _xAxisLocation;
     int _yAxisLocation;
     int _currentSquare;

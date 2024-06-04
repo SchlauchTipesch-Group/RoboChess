@@ -1,18 +1,40 @@
+#include <Wire.h>
 #include "SteppersControl.h"
 
-// 7V | 10V
-SteppersControl controller;
-int i = 0;
+#define SLAVE_ADDR 0x08
 
-void setup()
-{
-  // Constructor
-  Stepper* xStepper = new Stepper(200, 6, 8, 7, 9);
-  Stepper* yStepper = new Stepper(200, 2, 4, 3, 5);
-  controller = SteppersControl(xStepper, yStepper);
+SteppersControl controller;
+char buffer[32];
+bool bufferEmpty = true;
+
+void setup() {
+  Serial.begin(115200);  // Initialize Serial communication
+
+  controller = SteppersControl();
+
+  Serial.println("Running!");
+
+  Wire.begin(SLAVE_ADDR);  // Initialize I2C as slave
+  Wire.onReceive(receiveEvent);  // Register event
 }
 
-void loop()
-{
-  controller.manualControl();
+void loop() {
+  if (!bufferEmpty)
+  {
+    controller.move(buffer[1], buffer[2]);
+    bufferEmpty = true;
+  }
+  delay(100);
+}
+
+void receiveEvent(int howMany) {
+  int count = 0;
+  
+  while (Wire.available())
+  {
+    buffer[count] = Wire.read();
+    count++;
+  }
+
+  bufferEmpty = false;
 }
